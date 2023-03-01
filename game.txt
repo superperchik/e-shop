@@ -1,0 +1,550 @@
+let zarad = 50;
+let timer = 0;
+let gameOver = 0;
+let name = "";
+let move_speed = 3;
+let dron = document.getElementById("player");
+let dron_props = dron.getBoundingClientRect();
+let game_state = "Start";
+var $timerGame = 0;
+var $timerInterval;
+var $second = $("#second");
+var $minute = $("#minute");
+$(document).ready(function () {
+  $("#username").change(() => {
+    $("#btn-start")[document.getElementById("username").value ? "removeClass" : "addClass"]("no-drop");
+  });
+  $("#modal-rules").on("click", "#btn-start", function () {
+    name = document.getElementById("username").value;
+    if (name !== "") {
+      $("#modal-rules").hide();
+      $("#username-block").html(name);
+      initGame();
+    }
+  });
+  //инициализация игры
+  function initGame() {
+    clearInterval(timeoutZaryad);
+    resetGame();
+    dron.style.top = "40vh";
+    game_state = "Play";
+    zarad = 50;
+    timer = 0;
+    document.querySelectorAll(".pipe_sprite").forEach((e) => {
+      e.remove();
+    });
+    document.querySelectorAll(".battery").forEach((e) => {
+      e.remove();
+    });
+    zaryad();
+    startGame();
+    play();
+    controlDrone();
+  }
+  //Кнопка перезагрузки игры
+  $(".btn-reload").click(function () {
+    $(".modal-lose").hide();
+    $(".modal-raking").hide();
+    initGame();
+  });
+});
+var timeoutZaryad;
+function zaryad() {
+  timeoutZaryad = setInterval(function () {
+    let ostatok = zarad - 1;
+    zarad = ostatok;
+    $(".gasoline-number").html(ostatok);
+    $(".gasoline-value").css("width", ostatok + "%");
+    if (zarad == 0) {
+      //игра проиграна, записываем результат в таблицу
+      /*localStorage.setItem(name, minute + ":" + second);
+      $(".modal-raking").show();
+      game_state = "End";
+      clearInterval(timeoutZaryad);
+      resetGame();
+      //alert(localStorage.name);
+      $("#namePlayer").html(name);
+      $("#scorePlayer").html(minuteVal + ":" + secondVal);*/
+    }
+  }, 1000);
+}
+// Start game timer
+function startGame() {
+  resetGame();
+  $timerInterval = setInterval(function () {
+    $timerGame += 1 / 60;
+    let $secondVal = Math.floor($timerGame) - Math.floor($timerGame / 60) * 60;
+    let $minuteVal = Math.floor($timerGame / 60);
+    // Display formatted data our targets
+    $second.text($secondVal < 10 ? "0" + $secondVal.toString() : $secondVal);
+    $minute.text($minuteVal < 10 ? "0" + $minuteVal.toString() : $minuteVal);
+  }, 1000 / 60);
+}
+// Stop game timer
+function resetGame() {
+  $timerGame = 0;
+  $second.html("00");
+  $minute.html("00");
+  clearInterval($timerInterval);
+}
+//Функция работы игры
+function play() {
+  function move() {
+    if (game_state != "Play") return;
+    // Движение стен
+    let pipe_sprite = document.querySelectorAll(".pipe_sprite");
+    pipe_sprite.forEach((element) => {
+      let pipe_sprite_props = element.getBoundingClientRect();
+      dron_props = dron.getBoundingClientRect();
+      if (pipe_sprite_props.right <= 0) {
+        element.remove();
+      } else {
+        // Collision detection with dron and pipes
+        if (
+          dron_props.left < pipe_sprite_props.left + pipe_sprite_props.width &&
+          dron_props.left + dron_props.width > pipe_sprite_props.left &&
+          dron_props.top < pipe_sprite_props.top + pipe_sprite_props.height &&
+          dron_props.top + dron_props.height > pipe_sprite_props.top
+        ) {
+          // Change game state and end the game
+          // if collision occurs
+          $(".modal-lose").show();
+          resetGame();
+          clearInterval(timeoutZaryad);
+          game_state = "End";
+          return;
+        } else {
+          element.style.left = pipe_sprite_props.left - move_speed + "px";
+        }
+      }
+    });
+    //Движение батареек
+    let battareika = document.querySelectorAll(".battery");
+    battareika.forEach((element) => {
+      let battareika_props = element.getBoundingClientRect();
+      dron_props = dron.getBoundingClientRect();
+      if (battareika_props.right <= 0) {
+        element.remove();
+      } else {
+        if (
+          dron_props.left < battareika_props.left + battareika_props.width &&
+          dron_props.left + dron_props.width > battareika_props.left &&
+          dron_props.top < battareika_props.top + battareika_props.height &&
+          dron_props.top + dron_props.height > battareika_props.top
+        ) {
+          // Подбор батарейки
+          element.remove();
+          zarad += 5;
+          return;
+        } else {
+          element.style.left = battareika_props.left - move_speed + "px";
+        }
+      }
+    });
+    requestAnimationFrame(move);
+  }
+  requestAnimationFrame(move);
+  let pipe_seperation = 0;
+  let pipe_gap = 35;
+  //Генерация стен и батареек
+  function create_pipe() {
+    if (game_state != "Play") return;
+    pipe_seperation++;
+    if (pipe_seperation > 115) {
+      pipe_seperation = 0;
+      // Если сначала верхняя - потом нижняя и наоборот
+      let pipe_posi = Math.floor(Math.random() * 500);
+        addElement("div","pipe_sprite", 95, "100vw", 560-pipe_posi);
+        addElement("div","pipe_sprite", 580, "100vw", pipe_posi);
+      // Append the created pipe element in DOM
+      //alert('Позиция стены вверх' + (pipe_posi - 70));
+      //alert('Позиция стены низ' + (pipe_posi + pipe_gap));
+      
+     
+      // Add battery element in DOM
+      addElement("img","battery",  pipe_posi - pipe_gap  , "100vw");
+    }
+    requestAnimationFrame(create_pipe);
+  }
+  function addElement(type, className, topPosition, leftPosition, heightPosition) {
+      const gameElement = document.getElementById('game'),
+      element = document.createElement(type);
+      element.className = className;
+      element.style.left = leftPosition;
+      element.style.top = topPosition + 'px';
+      element.style.height = heightPosition + 'px';
+      if(className == "battery")
+      {
+        element.src = "img/battery.png";
+        
+      }
+      gameElement.appendChild(element);
+  }
+  requestAnimationFrame(create_pipe);
+}
+//управление дроном
+function controlDrone() {
+  const playerElement = document.getElementById("player");
+  playerElement.style.top = playerElement.getBoundingClientRect().top + "px";
+  $(document).keyup(function (e) {
+    let currentTop = parseInt(playerElement.style.top);
+    if (e.keyCode === 87 && currentTop > -6) {
+      playerElement.style.top = currentTop - 25 + "px";
+    } else if (e.keyCode === 83 && currentTop < 669) {
+      playerElement.style.top = currentTop + 25 + "px";
+    }
+  });
+}
+
+/* css reset start */
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+/* css reset end */
+
+.pipe_sprite {
+    position: fixed;
+    top: 40vh;
+    left: 100vw;
+    height: 70vh;
+    width: 50px;
+    background-image: url("../img/wall.png");
+    background-size: cover;
+}
+
+/* flex start */
+.flex-row {
+    display: flex;
+}
+.flex-sb {
+    justify-content: space-between;
+}
+.flex-ai-e {
+    align-items: flex-end;
+}
+.flex-col {
+    display: flex;
+    flex-direction: column;
+}
+.flex-aic {
+    align-items: center;
+}
+/* flex end */
+
+
+
+
+/* body and buttons start */
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: #464646;
+    font-family: "Segoe UI";
+    z-index: 999;
+    position: static;
+}
+.btn {
+    cursor: pointer;
+    background: #ffeccf;
+    border: none;
+    position: relative;
+    overflow: hidden;
+    width: 110px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all .5s ease-in;
+    margin-top: 20px;
+    color: #805512;
+    padding-bottom: 2px;
+}
+.no-drop{
+    pointer-events: none;
+    border: none !important;
+
+}
+.btn-start{
+    border: solid 2px red;
+}
+.btn-ripple {
+    position: absolute;
+    height: 100%;
+    background: #f4fffd;
+}
+.btn:hover {
+    background: #f39c12;
+}
+.btn-ripple-animation {
+    animation: ripple 1 1s forwards;
+}
+@keyframes ripple {
+    0% {
+        opacity: .4;
+        width: 0;
+    }
+    50% {
+        opacity: .4;
+        width: 100%;
+    }
+    100% {
+        opacity: 0;
+        width: 100%;
+    }
+}
+.btn p {
+    z-index: 999;
+    color: black;
+}
+/* body and buttons end */
+
+
+
+/* game start */
+#game {
+    width: 1024px;
+    height: 768px;
+    position: relative;
+    background: url("../img/beton_texture.jpg");
+    overflow: hidden;
+}
+/* game end */
+
+
+
+/* panel left start */
+.panel-left {
+    width: 95px;
+    height: 100%;
+    background: #ffffff;
+    padding: 15px 0;
+    justify-content: space-around;
+    box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.25);
+    z-index: 999;
+    position: relative;
+}
+#timer-count {
+    font-size: 20px;
+}
+#star-count,
+#gasoline-count {
+    position: relative;
+}
+
+.star-number {
+    position: absolute;
+    font-size: 21px;
+    font-weight: bold;
+    color: white;
+}
+#gasoline-count {
+    position: relative;
+    height: 50px;
+    width: 80%;
+    border: 2px solid black;
+    border-radius: 5px;
+    margin: 0 auto;
+}
+
+.gasoline-value {
+    height: 100%;
+    width: 50%;
+    background-color: #00b341;
+}
+
+.gasoline-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+}
+
+.star-number {
+    bottom: 15px;
+    left: 22px;
+}
+
+#timer-count, #username-block {
+    font-size: 30px;
+    font-weight: bold;
+    color: #00b341;
+}
+#timer-text {
+    text-align: center;
+    color: #00b341;
+    font-weight: bold;
+    font-size: 20px;
+    position: relative;
+    top: -8px;
+}
+#font-control {
+    width: 75%;
+}
+/* panel left end */
+
+
+
+/* modal start */
+.modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background: rgba(0, 0, 0, 0.59);
+    z-index: 99999;
+}
+.modal-wrap {
+    width: 100%;
+    background: #da9f42;
+    overflow: hidden;
+    padding: 30px 10%;
+    height: 400px;
+}
+.modal-wrap ul {
+    list-style: none;
+    padding-left: 2px;
+    margin-top: 12px;
+}
+.modal-desc {
+    font-size: 21px;
+    margin-bottom: 3px;
+}
+.modal h2 {
+    color: #ffeccf;
+    font-size: 34px;
+    text-shadow: 1px 1px black;
+}
+.modal-text,
+.modal li {
+    color: #fff1db;
+    font-size: 18px;
+    text-shadow: 1px 1px rgba(0, 0, 0, 0.35);
+}
+/* modal end */
+
+
+
+/*  table raking start  */
+.logo-black {
+    height: 60px;
+}
+.column {
+    color: #fff1db;
+    font-size: 18px;
+    text-shadow: 1px 1px rgba(0, 0, 0, 0.35);
+    width: 25%;
+}
+.table {
+    margin-top: 20px;
+}
+.modal-name .modal-wrap,
+.modal-raking .modal-wrap {
+    background: #303030;
+}
+.modal-title-border {
+    border-top: 1px solid #9c9c9c;
+    border-bottom: 1px solid #9c9c9c;
+}
+.table .flex-row:first-child {
+    margin-bottom: 6px;
+}
+.table .flex-row {
+    margin-bottom: 4px;
+}
+.table .flex-row > .column:first-child {
+    width: 10%;
+    margin-left: 15px;
+}
+.table .flex-row > .column:nth-child(2) {
+    width: 50%;
+}
+.table .flex-row > .column:nth-child(3) {
+    width: 40%;
+    text-align: center;
+}
+.table .flex-row > .column:nth-child(4) {
+    width: 10%;
+    text-align: center;
+}
+/*  table raking end  */
+
+
+/* game zone start */
+.element {
+    position: absolute;
+}
+#player {
+    top: 50%;
+    left: 15%;
+}
+.showPlayer {
+    animation: showPlayer 1 1s;
+}
+.showElement {
+    animation: showElement 1 1s;
+}
+@keyframes showPlayer {
+    0% {
+        transform: translateX(-200px);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+@keyframes showElement {
+    0% {
+        transform: scale(0);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+.star,
+.parachute,
+.bird,
+.cloud {
+    object-fit: contain;
+     position: absolute;
+}
+/* game zone end */
+
+
+.modal-raking,
+.modal-name,
+.modal-lose {
+    display: none;
+}
+
+.modal-lose {
+    top: 0;
+}
+
+.btn-block {
+    background: #4a4a4a;
+    cursor: no-drop;
+}
+
+.panel-left img {
+    opacity: .8;
+    cursor: pointer;
+    transition: all .5s ease-in;
+}
+.panel-left img:hover {
+    opacity: 1;
+}
+
+.wall, .battery {
+    position: fixed;
+}
+
+.wall {
+    width: 50px;
+   
+}

@@ -1,0 +1,223 @@
+/// РОУТИНГ
+import { createRouter, createWebHistory } from 'vue-router'
+import ShopCatalog from '@/components/ShopCatalog.vue'
+import Register from '@/components/RegistreUser.vue'
+import LoginUser from '@/components/LoginUser.vue'
+import OrdersUser from '@/components/OrderUser.vue'
+import CartUser from '@/components/CartUser.vue'
+import ExitUser from '@/components/ExitUser.vue'
+import SetToken from '@/components/SetToket.vue'
+
+const routes = [
+  {
+    path: '/',
+    name: 'ShopCatalog',
+    component: ShopCatalog
+  },
+  {
+    path: '/register',
+    name: 'RegisterUser',
+    component: Register
+  },
+  {
+    path: '/login',
+    name: 'LoginUser',
+    component: LoginUser
+  },
+  {
+    path: '/orders',
+    name: 'OrdersUser',
+    component: OrdersUser
+  },
+  {
+    path: '/cart',
+    name: 'CartUser',
+    component: CartUser
+  },
+  {
+    path: '/exit',
+    name: 'ExitUser',
+    component: ExitUser
+  },
+  {
+    path: '/token',
+    name: 'SetToken',
+    component: SetToken
+  }
+]
+
+const router = createRouter({
+  history: createWebHistory(process.env.BASE_URL),
+  routes
+})
+
+export default router
+//ХРАНИЛИЩЕ
+import {createStore } from 'vuex'
+const store = createStore({
+  state () {
+    return {
+      apiToken: 0
+    }
+  },
+})
+export default store;
+
+//ГЛАВНЫЙ
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+import store from '@/store/index';
+
+createApp(App).use(router).use(store).mount('#app')
+
+//В КОМПОНЕНТАХ
+<script>
+  export default {
+    name: "ExitUser",
+    data() {
+      return {
+        productsData: [],  
+        
+      };
+    },
+    created(){
+      this.$store.state.apiToken = 0;
+       //localStorage.removeItem('api-token');
+        this.$router.push("/")
+    },
+    methods:{
+    checkApi: function()
+    {
+      return localStorage.getItem('api-token');
+    }
+  }};
+  </script>
+ <form @submit.prevent="login">
+            <div class="form-floating mb-3">
+              <input
+                type="email"
+                class="form-control "
+                required
+                v-model="post.email"
+                id="floatingInput"
+                placeholder="name@example.com"
+              />
+<script>
+import axios from "axios";
+export default {
+  name: "LoginUser",
+  data() {
+    return {
+      apiToken: null,
+      errors: [],
+      message: 0,
+      post: {
+        email: null,
+        password: null,
+      },
+    };
+  },
+  methods: {
+    login: function () {
+      axios
+        .post("http://service-standart/api/login", this.post)
+        .then((response) => (this.$store.state.apiToken = response.data.data) )
+        .catch((e) => {
+          this.errors.push(e);
+        });
+        this.$router.push("/token")
+    },
+    invalidForm: function () {
+      let elements = document.getElementsByClassName("form-control");
+      for (let i = 0; i < elements.length; i += 1) {
+        //elements[i].classList.remove("is-valid");
+        elements[i].classList.add("is-invalid");
+      }
+    },
+  },
+};
+</script>
+ <router-link
+          to="/"
+          class="d-flex align-items-center text-dark text-decoration-none"
+        >
+ <div class="col" v-for="(data, index) in productsData.items" :key="index">
+v-if="$store.state.apiToken !== 0"
+              @click="addToCart(data.id)"
+<script>
+import axios from "axios";
+
+export default {
+  name: "ShopCatalog",
+  data() {
+    return {
+      productsData: [],
+    };
+  },
+  created() {
+    axios
+      .get("https://vue-study.skillbox.cc/api/products")
+      .then((response) => (this.productsData = response.data));
+    this.checkApi();
+  },
+  methods: {
+    addToCart: function (item) {
+      axios.defaults.headers.common['Authorization'] = `Bearer `+this.$store.state.apiToken;
+      axios.post("http://service-standart/api/cart/" + item);
+      alert("Товар успешно добавлен в корзину");
+    },
+    checkApi: function () {
+      return localStorage.getItem("api-token");
+    },
+  },
+};
+</script>
+
+//ГЛАВНЫЙ КОМПОНЕНТ
+<template>
+  <div id="app">
+    <HeaderBar></HeaderBar>
+      <transition name="moveInUp">
+        <router-view />
+      </transition>
+  </div>
+</template>
+
+<script>
+ import HeaderBar from '@/components/MenuShop.vue'
+  
+  
+export default {
+  name: "App",
+  data() {
+    return{
+    x: this.checkApi(),
+  }},
+  components: {
+      HeaderBar,
+   },
+  methods:{
+      checkApi: function()
+  {
+    return localStorage.getItem('api-token');
+  }
+}
+};
+</script>
+<style scoped>
+.moveInUp-enter-active{
+  animation: fadeIn 1s ease-in;
+}
+@keyframes fadeIn{
+  0%{
+    opacity: 0;
+  }
+  50%{
+    opacity: 0.5;
+  }
+  100%{
+    opacity: 1;
+  }
+}
+</style>
